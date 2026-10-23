@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101a2a">
+<title>Sagrada Escritura</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#101a2a;--fg:#f2f5fa;--mut:#9fb0c8;--card:#263447;--bd:#34455e;--link:#8fb2ff;--bar:#101a2a;--hl:#5a4a12;--sel:#27456e;--fs:19px;--lh:1.6;--ff:Georgia,'Times New Roman',serif;--ui:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+body[data-theme=light]{--bg:#fbfbf8;--fg:#1c2330;--mut:#5d6b80;--card:#eef1f6;--bd:#d3dae6;--link:#1d4fb8;--bar:#fbfbf8;--hl:#fff1a8;--sel:#cfe0ff}
+body[data-theme=sepia]{--bg:#f3e9d2;--fg:#3b2f1f;--mut:#7a6a50;--card:#e8dcc0;--bd:#d2c29c;--link:#8a4b12;--bar:#f3e9d2;--hl:#f6dd8a;--sel:#e2c98e}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--ui)}
+body{min-height:100vh}
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 14px;background:var(--bar);border-bottom:1px solid var(--bd)}
+header button{background:none;border:0;color:var(--fg);font-size:26px;width:44px;height:44px;cursor:pointer;border-radius:10px}
+header h1{font:400 21px/1 var(--ff);margin:0;text-align:center;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px}
+main{max-width:760px;margin:0 auto;padding:18px 16px 110px}
+.hero{text-align:center;font:400 38px/1.15 var(--ff);margin:26px 0 8px}
+.sub{text-align:center;font-size:21px;margin:0 0 20px}
+h2.t{font:400 38px/1.15 var(--ff);margin:10px 0 18px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid.ch{grid-template-columns:repeat(auto-fill,minmax(66px,1fr));gap:10px}
+.btn{display:flex;align-items:center;justify-content:center;text-align:center;min-height:64px;padding:10px;background:var(--card);border:1px solid var(--bd);border-radius:14px;color:var(--fg);font:600 20px/1.2 var(--ui);text-decoration:none;cursor:pointer}
+.btn.bk{color:var(--link);font-weight:500;min-height:68px}
+.btn.n{min-height:56px;font-size:19px;color:var(--link);font-weight:500}
+.btn.n.on{background:var(--link);color:var(--bg)}
+.back{display:inline-block;color:var(--mut);text-decoration:none;font-size:18px;margin:2px 0 14px}
+.row{display:flex;gap:12px;margin-top:16px}.row .btn{flex:1;font-size:18px;min-height:56px}
+.cont{margin:0 0 18px;padding:14px;border:1px solid var(--bd);border-radius:14px;background:var(--card);display:block;text-decoration:none;color:var(--fg)}
+.cont small{color:var(--mut);display:block;font-size:14px;margin-bottom:2px}.cont b{font-size:20px;font-weight:600}
+#txt{font-family:var(--ff);font-size:var(--fs);line-height:var(--lh)}
+#txt h2{font:400 1.45em/1.2 var(--ff);margin:.2em 0 .6em;text-align:center}
+#txt h3{font:700 .9em/1.3 var(--ui);letter-spacing:.04em;text-transform:uppercase;color:var(--link);margin:1.4em 0 .4em}
+#txt h4{font:italic 600 1em/1.3 var(--ff);margin:1.1em 0 .3em;color:var(--mut)}
+#txt p{margin:.45em 0}#txt p.c{margin:0;padding-left:1.2em}
+.vs{padding:1px 4px;margin:0 -4px;border-radius:6px}.vs.hl{background:var(--hl)}.vs.sel{background:var(--sel)}.vs.flash{animation:fl 2s}
+@keyframes fl{0%,60%{background:var(--sel)}100%{background:transparent}}
+a.n{font:600 .62em/1 var(--ui);color:var(--link);vertical-align:super;margin-right:.18em;text-decoration:underline dotted;padding:4px 2px}
+a.cm{display:inline-block;font:500 14px var(--ui);color:var(--link);text-decoration:none;border:1px solid var(--bd);border-radius:14px;padding:5px 12px;margin-top:6px}
+.doc{font-family:var(--ff);font-size:var(--fs);line-height:var(--lh)}.doc p{margin:.5em 0}.doc a{color:var(--link)}.doc a.img{font:.72em var(--ui);border:1px solid var(--bd);border-radius:.3em;padding:0 .3em;text-decoration:none}.doc p.li{padding-left:1.2em}.doc p.flash{animation:fl 2.4s}
+b.n{font:600 .62em/1 var(--ui);color:var(--link);vertical-align:super;margin-right:.18em}
+body.nonum b.n{display:none}
+#bar{position:fixed;left:0;right:0;bottom:0;z-index:25;display:flex;align-items:center;gap:8px;padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:var(--bar);border-top:1px solid var(--bd)}
+#bar .btn{min-height:46px;font-size:17px;flex:1}#bar .mid{flex:2;font-weight:500}
+#bar .btn[disabled]{opacity:.35;pointer-events:none}
+#sel{position:fixed;left:0;right:0;bottom:62px;z-index:26;display:none;gap:8px;padding:8px 12px;background:var(--bar);border-top:1px solid var(--bd)}#sel.on{display:flex}#sel .btn{min-height:42px;font-size:16px;flex:1}
+#fab{position:fixed;right:16px;bottom:84px;z-index:24;width:56px;height:56px;border-radius:50%;border:1px solid var(--bd);background:#3a4d75;color:#fff;font-size:26px;cursor:pointer;box-shadow:0 4px 14px #0006}
+#sheet{position:fixed;inset:0;z-index:40;display:none;background:#0008}#sheet.on{display:block}
+#sheet .p{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--bd);border-radius:18px 18px 0 0;padding:18px 18px calc(24px + env(safe-area-inset-bottom));max-width:760px;margin:0 auto}
+#sheet h3{margin:0 0 12px;font:600 18px var(--ui)}#sheet label{display:block;margin:14px 0 6px;color:var(--mut);font-size:14px}
+#sheet .seg{display:flex;gap:8px}#sheet .seg .btn{min-height:44px;font-size:16px;flex:1}#sheet .seg .btn.on{outline:2px solid var(--link)}
+#sheet input[type=range]{width:100%}
+.si{width:100%;padding:14px;border-radius:12px;border:1px solid var(--bd);background:var(--card);color:var(--fg);font:18px var(--ui)}
+.res{display:block;padding:12px 4px;border-bottom:1px solid var(--bd);color:var(--fg);text-decoration:none;font-family:var(--ff);font-size:17px;line-height:1.45}
+.res b{font:600 15px var(--ui);color:var(--link);display:block}.res mark{background:var(--hl);color:inherit;border-radius:3px}
+.chips{display:flex;gap:8px;margin:10px 0}.chips .btn{min-height:40px;font-size:15px;flex:1}.chips .btn.on{outline:2px solid var(--link)}
+.mut{color:var(--mut);font-size:15px}.x{float:right;background:none;border:0;color:var(--mut);font-size:22px;padding:0 6px}
+</style>
+</head>
+<body data-theme="dark">
+<header><button id="hb" aria-label="Atrás">←</button><h1 id="ht">Sagrada Escritura</h1><button id="hh" aria-label="Inicio">⌂</button></header>
+<main id="main"></main>
+<div id="sel"><button class="btn" id="scopy">Copiar</button><button class="btn" id="shl">Resaltar</button><button class="btn" id="sx">✕</button></div>
+<div id="bar" hidden></div>
+<button id="fab" aria-label="Ajustes">⚙</button>
+<div id="sheet"><div class="p" id="sp"></div></div>
+<script>
+const CAT=/*CATALOG*/;
+const $=s=>document.querySelector(s);
+const LS={get(k,d){try{const v=localStorage.getItem('bib.'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('bib.'+k,JSON.stringify(v))}catch(e){}}};
+let SET=Object.assign({fs:19,lh:1.6,theme:'dark',font:'serif',num:true},LS.get('set',{}));
+function applySet(){const r=document.documentElement.style;r.setProperty('--fs',SET.fs+'px');r.setProperty('--lh',SET.lh);r.setProperty('--ff',SET.font==='serif'?"Georgia,'Times New Roman',serif":"system-ui,-apple-system,'Segoe UI',Roboto,sans-serif");document.body.dataset.theme=SET.theme;document.body.classList.toggle('nonum',!SET.num);const m=document.querySelector('meta[name=theme-color]');m.content=getComputedStyle(document.body).getPropertyValue('--bar').trim()||'#101a2a'}
+const norm=s=>s.toLowerCase().replace(/[áàäâ]/g,'a').replace(/[éèëê]/g,'e').replace(/[íìïî]/g,'i').replace(/[óòöô]/g,'o').replace(/[úùüû]/g,'u');
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const BK=CAT.books,SEC=CAT.sections,DOCS=CAT.docs;
+const TITLES={Comentarios:'Comentarios',NotasSE:'Notas de la Sagrada Escritura',NotasSEbac:'Notas de la Sagrada Escritura (BAC)',POrigenes:'Orígenes',PCirilo:'Cirilo',PCrisostomo:'San Juan Crisóstomo',Cartas:'Cartas e intervenciones del Prelado',Romana:'Romana',STh:'Suma Teológica',CV2:'Concilio Vaticano II',CDSocial:'Compendio de la Doctrina Social',CatenaAurea:'Catena Aurea',Catecismo:'Catecismo de la Iglesia Católica',HCD:'Hablar con Dios',VyS:'Vida cotidiana y santidad',StaSede:'Documentos de la Santa Sede',Resumenes:'Resúmenes de fe cristiana',CEE:'Conferencia Episcopal Española',Antologia:'Antología de textos',FOD:'El Fundador del Opus Dei',Fco:'Papa Francisco',StaMarta:'Papa Francisco (Santa Marta)',JP2:'San Juan Pablo II',B16:'Benedicto XVI',DS:'Enchiridion symbolorum (Denzinger)',Padres:'Padres de la Iglesia',PCreta:'Andrés de Creta',PAgustin:'San Agustín',DEspiritual:'Series monográficas',Marianos:'Magisterio por temas',DA:'Beato Álvaro del Portillo',Obra:'Libros del Prelado del Opus Dei',SanJosemaria:'San Josemaría',DicTeo:'Diccionario de Teología',VidaXto:'Vida de Cristo',Leon14:'León XIV',B16Libros:'Libros de Benedicto XVI',JP2Libros:'Libros de Juan Pablo II'};
+const dTitle=d=>TITLES[d]||DOCS[d].title;
+const secOf=id=>SEC.findIndex(s=>s.books.includes(id));
+const cache=new Map();
+async function loadBook(id){if(cache.has(id))return cache.get(id);const p=fetch('data/b'+String(id).padStart(2,'0')+'.json?v='+((CAT.bv&&CAT.bv[id])||'0')).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()});cache.set(id,p);try{return await p}catch(e){cache.delete(id);throw e}}
+const chLabel=(b,i)=>{const n=BK[b].ch[i].n;const m=n.match(/^\d+/);let l=m?m[0]:n;if(b===22&&i>0){const pm=(BK[b].ch[i-1].n.match(/^\d+/)||[''])[0];if(pm===l)l+='b'}return l.length>5?l.slice(0,5):l};
+function next(b,i){if(i+1<BK[b].ch.length)return[b,i+1];return b+1<BK.length?[b+1,0]:null}
+function prev(b,i){if(i>0)return[b,i-1];return b>0?[b-1,BK[b-1].ch.length-1]:null}
+let NAV=[],backing=false,selSet=new Set(),cur=null;
+function goBack(fallback){NAV.pop();const t=NAV[NAV.length-1];if(t){backing=true;location.hash=t}else location.hash=fallback}
+function setHead(t,backHash,useNav){$('#ht').textContent=t;$('#hb').onclick=()=>{if(useNav&&NAV.length>1&&/^#\/d/.test(NAV[NAV.length-2]||''))goBack(backHash);else if(useNav==='doc')goBack(backHash||'#/');else location.hash=backHash};$('#hb').style.visibility=backHash?'visible':'hidden'}
+function bar(html){const e=$('#bar');if(html){e.hidden=false;e.innerHTML=html}else{e.hidden=true;e.innerHTML=''}}
+async function render(){
+  closeSel();
+  { const hs=location.hash||'#/'; if(!backing&&NAV[NAV.length-1]!==hs){const L=NAV[NAV.length-1]||'';const dp=/^#\/dp\/([^/]+)\//.exec(hs);if(dp&&L.startsWith('#/dp/'+dp[1]+'/'))NAV[NAV.length-1]=hs;else{NAV.push(hs);if(NAV.length>200)NAV.shift()}} backing=false }
+  const h=(location.hash||'#/').slice(2).split('/');const k=h[0]||'';const M=$('#main');
+  $('#fab').style.display='';bar(null);window.scrollTo(0,0);
+  try{
+  if(k===''){
+    setHead('Sagrada Escritura','');
+    const last=LS.get('last',null);
+    M.innerHTML='<h2 class="hero">Sagrada Escritura</h2><p class="sub">Elige una sección</p>'+(last?`<a class="cont" href="#/r/${last.b}/${last.c}"><small>Continuar leyendo</small><b>${esc(BK[last.b].name)} · ${esc(BK[last.b].ch[last.c].t)}</b></a>`:'')+'<div class="grid">'+SEC.map((s,i)=>`<a class="btn" href="#/s/${i}">${esc(s.name)}</a>`).join('')+'</div><div class="row"><a class="btn" href="#/search">🔍 Buscar</a><a class="btn" href="#/marks">★ Marcadores</a></div><div class="row"><a class="btn" href="#/docs">📚 Comentarios y libros enlazados</a></div>';
+  }else if(k==='s'){
+    const i=+h[1];if(!SEC[i])return notFound();
+    setHead(SEC[i].name,'#/');
+    M.innerHTML=`<a class="back" href="#/">← Secciones</a><h2 class="t">${esc(SEC[i].name)}</h2><div class="grid">`+SEC[i].books.map(b=>`<a class="btn bk" href="#/b/${b}">${esc(BK[b].name)}</a>`).join('')+'</div>';
+  }else if(k==='b'){
+    const b=+h[1];if(!BK[b])return notFound();
+    const s=secOf(b);setHead(BK[b].name,'#/s/'+s);
+    M.innerHTML=`<a class="back" href="#/s/${s}">← ${esc(SEC[s].name)}</a><h2 class="t">${esc(BK[b].name)}</h2><p class="mut">${BK[b].ch.length} ${BK[b].ch.length===1?'capítulo':'capítulos'}</p><div class="grid ch">`+BK[b].ch.map((c,i)=>`<a class="btn n" href="#/r/${b}/${i}" title="${esc(c.t)}">${i===0&&c.t==='Introducción'?'Intr.':esc(chLabel(b,i))}</a>`).join('')+'</div>';
+  }else if(k==='r'){
+    const b=+h[1],c=+h[2],v=h[3];if(!BK[b]||!BK[b].ch[c])return notFound();
+    setHead(BK[b].name,'#/b/'+b,true);
+    M.innerHTML='<p class="mut" style="text-align:center">Cargando…</p>';
+    const bk=await loadBook(b);if(location.hash!==('#/r/'+b+'/'+c+(v?'/'+v:'')))return;
+    cur={b,c};LS.set('last',{b,c});
+    const ch=bk.ch[c];const hl=LS.get('hl',{});
+    M.innerHTML=`<div id="txt"><h2>${esc(BK[b].name)}<br><small style="font-size:.7em;color:var(--mut)">${esc(ch.t)}</small>${ch.k?`<br><a class="cm" href="#/d/Comentarios/${ch.k}">Comentario al capítulo →</a>`:''}</h2>${ch.h}</div>`;
+    M.querySelectorAll('.vs').forEach(e=>{if(hl[b+':'+c+':'+e.dataset.v])e.classList.add('hl');e.addEventListener('click',ev=>{if(ev.target.closest('a'))return;toggleSel(e)})});
+    const p=prev(b,c),n=next(b,c),bm=LS.get('bm',[]).some(x=>x.b===b&&x.c===c);
+    bar(`<a class="btn" ${p?`href="#/r/${p[0]}/${p[1]}"`:'disabled'} aria-label="Anterior">‹</a><a class="btn mid" href="#/b/${b}">${esc(BK[b].ab)} ${esc(chLabel(b,c))} ▾</a><button class="btn" id="bmk" aria-label="Marcador">${bm?'★':'☆'}</button><a class="btn" ${n?`href="#/r/${n[0]}/${n[1]}"`:'disabled'} aria-label="Siguiente">›</a>`);
+    $('#bmk').onclick=()=>{let l=LS.get('bm',[]);const i=l.findIndex(x=>x.b===b&&x.c===c);if(i>=0)l.splice(i,1);else l.unshift({b,c});LS.set('bm',l);$('#bmk').textContent=i>=0?'☆':'★'};
+    if(v){const e=M.querySelector('.vs[data-v="'+v+'"]');if(e){e.scrollIntoView({block:'center'});e.classList.add('flash')}}
+  }else if(k==='search'){setHead('Buscar','#/');await renderSearch(decodeURIComponent(h[1]||''))}
+  else if(k==='marks'){setHead('Marcadores','#/');await renderMarks()}
+  else if(k==='docs'){setHead('Libros enlazados','#/');renderDocs()}
+  else if(k==='d'||k==='dp'){await renderDoc(h[1],k==='dp'?{page:+h[2]||0}:{off:h[2]===undefined?0:+h[2]})}
+  else notFound();
+  }catch(e){M.innerHTML='<p class="mut" style="text-align:center">No se pudo cargar el contenido ('+esc(String(e.message||e))+').<br><br><a class="btn" href="#/">Inicio</a></p>'}
+}
+function renderDocs(){const names=Object.keys(DOCS);$('#main').innerHTML='<h2 class="t">Libros enlazados</h2><p class="mut">Comentarios y los libros a los que enlaza. Se abren desde los números de versículo de la Biblia y desde los enlaces del propio texto.</p><div class="grid">'+names.map(d=>`<a class="btn bk" href="#/dp/${d}/0" style="flex-direction:column"><span>${esc(dTitle(d))}</span><small class="mut">${Math.round(DOCS[d].kb/102.4)/10} MB</small></a>`).join('')+'</div>'}
+const dcache=new Map();
+function chunkOf(doc,N){const m=DOCS[doc];if(m.x&&m.x[N]!==undefined)return m.x[N];let lo=0,hi=m.starts.length-1;while(lo<hi){const mid=(lo+hi+1)>>1;if(m.starts[mid]<=N)lo=mid;else hi=mid-1}return lo}
+async function loadChunk(doc,k){const key=doc+'/'+k;if(dcache.has(key))return dcache.get(key);const r=await fetch('docs/'+doc+'/'+k+'.html?v='+DOCS[doc].v);if(!r.ok)throw new Error('HTTP '+r.status);const t=await r.text();dcache.set(key,t);if(dcache.size>8)dcache.delete(dcache.keys().next().value);return t}
+async function renderDoc(doc,o){
+  const M=$('#main');if(!DOCS[doc])return notFound();
+  const hs=location.hash;const k=o.page!==undefined?Math.min(Math.max(o.page,0),DOCS[doc].starts.length-1):chunkOf(doc,o.off);
+  setHead(dTitle(doc),'#/docs','doc');M.innerHTML='<p class="mut" style="text-align:center">Cargando…</p>';
+  const t=await loadChunk(doc,k);if(location.hash!==hs)return;
+  M.innerHTML='<div class="doc" id="dx">'+t+'</div>';
+  if(o.off){let e=M.querySelector('#o'+o.off);let p=e&&(e.closest('p')||e);if(p&&!p.textContent.trim()&&!p.dataset.o){p=p.nextElementSibling||p}
+    if(!p){const ps=[...M.querySelectorAll('p[data-o]')];for(const q of ps){if(+q.dataset.o<=o.off)p=q;else break}}
+    if(p){p.scrollIntoView({block:'start'});window.scrollBy&&window.scrollBy(0,-70);p.classList.add('flash')}}
+}
+function notFound(){$('#main').innerHTML='<p class="mut" style="text-align:center">Página no encontrada.<br><br><a class="btn" href="#/">Inicio</a></p>'}
+/* selección de versículos */
+function toggleSel(e){e.classList.toggle('sel');if(e.classList.contains('sel'))selSet.add(e);else selSet.delete(e);$('#sel').classList.toggle('on',selSet.size>0);$('#fab').style.display=selSet.size?'none':''}
+function closeSel(){selSet.forEach(e=>e.classList.remove('sel'));selSet.clear();$('#sel').classList.remove('on')}
+function selVerses(){return [...selSet].sort((a,b)=>parseInt(a.dataset.v)-parseInt(b.dataset.v))}
+$('#sx').onclick=()=>{closeSel();$('#fab').style.display=''};
+$('#scopy').onclick=async()=>{const vs=selVerses();if(!vs.length)return;const t=vs.map(e=>[...e.querySelectorAll('p')].map(p=>p.textContent.replace(/^\s*\d+[a-z]?\s*/,'').trim()).join(' ')).join(' ');const nums=vs.map(e=>e.dataset.v);const ref=BK[cur.b].ab+' '+chLabel(cur.b,cur.c)+','+(nums.length>1?nums[0]+'-'+nums[nums.length-1]:nums[0]);const out='«'+t+'» ('+ref+')';try{await navigator.clipboard.writeText(out)}catch(e){const ta=document.createElement('textarea');ta.value=out;document.body.appendChild(ta);ta.select();try{document.execCommand('copy')}catch(_){}ta.remove()}closeSel();$('#fab').style.display='';toast('Copiado')};
+$('#shl').onclick=()=>{const hl=LS.get('hl',{});const vs=selVerses();const all=vs.every(e=>e.classList.contains('hl'));vs.forEach(e=>{const key=cur.b+':'+cur.c+':'+e.dataset.v;if(all){delete hl[key];e.classList.remove('hl')}else{hl[key]=1;e.classList.add('hl')}});LS.set('hl',hl);closeSel();$('#fab').style.display=''};
+function toast(t){const d=document.createElement('div');d.textContent=t;d.style.cssText='position:fixed;left:50%;bottom:130px;transform:translateX(-50%);background:#000c;color:#fff;padding:10px 18px;border-radius:20px;z-index:60;font:15px var(--ui)';document.body.appendChild(d);setTimeout(()=>d.remove(),1400)}
+/* búsqueda */
+let IDX=null,scope='all';
+async function buildIdx(prog){if(IDX)return IDX;const out=[];for(let b=0;b<BK.length;b++){const bk=await loadBook(b);bk.ch.forEach((ch,ci)=>{const re=/<div class="vs" data-v="([^"]+)">(.*?)<\/div>/gs;let m;while((m=re.exec(ch.h))){const t=m[2].replace(/<[^>]+>/g,' ').replace(/&quot;/g,'"').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/\s+/g,' ').replace(/^\s*\d+[a-z]?\s*/,'').trim();out.push({b,c:ci,v:m[1],t,n:norm(t)})}});if(prog)prog(b+1)}IDX=out;return out}
+function parseRef(q){const m=norm(q.trim()).match(/^(\d?\s*[a-z.]+)\s*(\d+)(?:\s*[,:.]\s*(\d+))?$/);if(!m)return null;const tok=m[1].replace(/[\s.]/g,'');let b=BK.findIndex(x=>norm(x.ab).toLowerCase()===tok);if(b<0){const c=BK.map((x,i)=>[x,i]).filter(([x])=>norm(x.name).replace(/\s/g,'').startsWith(tok));if(c.length)b=c[0][1]}if(b<0)return null;const n=+m[2];let ci=BK[b].ch.findIndex(c=>new RegExp('^(Capítulo|Salmo) '+n+'(\\D|$)').test(c.t));if(ci<0&&BK[b].ch.length>=n&&b!==22)ci=n-1+(BK[b].ch[0].t==='Introducción'?1:0);if(ci<0||!BK[b].ch[ci])return null;return{b,c:ci,v:m[3]}}
+async function renderSearch(q0){
+  const M=$('#main');M.innerHTML=`<input id="q" class="si" type="search" placeholder="Palabra, frase o cita (Jn 3,16)" value="${esc(q0)}" autocomplete="off"><div class="chips"><button class="btn" data-s="all">Toda la Biblia</button><button class="btn" data-s="at">Antiguo T.</button><button class="btn" data-s="nt">Nuevo T.</button></div><div id="out" class="mut"></div>`;
+  const q=$('#q');M.querySelectorAll('.chips .btn').forEach(b=>{b.classList.toggle('on',b.dataset.s===scope);b.onclick=()=>{scope=b.dataset.s;M.querySelectorAll('.chips .btn').forEach(x=>x.classList.toggle('on',x.dataset.s===scope));go()}});
+  let t;q.oninput=()=>{clearTimeout(t);t=setTimeout(go,300)};
+  async function go(){const val=q.value.trim();const out=$('#out');if(val.length<2){out.textContent='Escribe al menos 2 letras.';return}
+    history.replaceState(null,'','#/search/'+encodeURIComponent(val));
+    let html='';const ref=parseRef(val);if(ref)html+=`<a class="res" href="#/r/${ref.b}/${ref.c}${ref.v?'/'+ref.v:''}"><b>Ir a</b>${esc(BK[ref.b].name)} ${esc(chLabel(ref.b,ref.c))}${ref.v?', '+esc(ref.v):''}</a>`;
+    out.textContent=IDX?'Buscando…':'Preparando el índice de búsqueda…';
+    const idx=await buildIdx(n=>{if(!IDX)out.textContent='Preparando el índice de búsqueda… '+n+'/73'});
+    if(q.value.trim()!==val)return;
+    const terms=[];const re=/"([^"]+)"|(\S+)/g;let m;const nq=norm(val);while((m=re.exec(nq)))terms.push(m[1]||m[2]);
+    const tre=terms.map(x=>new RegExp('(^|[^a-zñ0-9])'+x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));const res=[];for(const r of idx){if(scope==='at'&&r.b>=46)continue;if(scope==='nt'&&r.b<46)continue;if(tre.every(x=>x.test(r.n))){res.push(r);if(res.length>=400)break}}
+    const hi=(r)=>{let s=esc(r.t),ns=norm(s);const spans=[];terms.forEach(x=>{const ex=esc(x);let i=0;while((i=ns.indexOf(norm(ex),i))>=0){spans.push([i,i+ex.length]);i+=ex.length}});spans.sort((a,b)=>a[0]-b[0]);let o='',p=0;for(const [a,b] of spans){if(a<p)continue;o+=s.slice(p,a)+'<mark>'+s.slice(a,b)+'</mark>';p=b}return o+s.slice(p)};
+    html+=res.map(r=>`<a class="res" href="#/r/${r.b}/${r.c}/${r.v}"><b>${esc(BK[r.b].ab)} ${esc(chLabel(r.b,r.c))},${esc(r.v)}</b>${hi(r)}</a>`).join('');
+    out.innerHTML=(res.length?`<div style="margin:6px 0">${res.length>=400?'Más de 400':res.length} resultado(s)${res.length>=400?' (se muestran los primeros)':''}</div>`:(ref?'':'Sin resultados.'))+html}
+  if(q0)go();else q.focus()
+}
+async function renderMarks(){
+  const M=$('#main');const bm=LS.get('bm',[]),hl=LS.get('hl',{});
+  let h='<h2 class="t">Marcadores</h2><h4 class="mut">Capítulos</h4>';
+  h+=bm.length?bm.map((x,i)=>`<div class="res"><button class="x" data-bm="${i}" aria-label="Quitar">✕</button><a href="#/r/${x.b}/${x.c}" style="color:var(--link);text-decoration:none"><b style="display:inline">${esc(BK[x.b].name)} · ${esc(BK[x.b].ch[x.c].t)}</b></a></div>`).join(''):'<p class="mut">Aún no hay capítulos marcados (usa ☆ al leer).</p>';
+  h+='<h4 class="mut" style="margin-top:24px">Versículos resaltados</h4><div id="hls"></div>';M.innerHTML=h;
+  M.querySelectorAll('[data-bm]').forEach(b=>b.onclick=()=>{const l=LS.get('bm',[]);l.splice(+b.dataset.bm,1);LS.set('bm',l);renderMarks()});
+  const keys=Object.keys(hl).map(k=>k.split(':').map(Number)).sort((a,b)=>a[0]-b[0]||a[1]-b[1]||a[2]-b[2]);const box=$('#hls');
+  if(!keys.length){box.innerHTML='<p class="mut">Toca un versículo mientras lees para resaltarlo.</p>';return}
+  let o='';for(const [b,c,v] of keys){const bk=await loadBook(b);const ch=bk.ch[c];const m=ch&&ch.h.match(new RegExp('<div class="vs" data-v="'+v+'">(.*?)</div>','s'));const t=m?m[1].replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').replace(/^\s*\d+[a-z]?\s*/,'').trim():'';o+=`<div class="res"><button class="x" data-hl="${b}:${c}:${v}" aria-label="Quitar">✕</button><a href="#/r/${b}/${c}/${v}" style="color:inherit;text-decoration:none"><b>${esc(BK[b].ab)} ${esc(chLabel(b,c))},${v}</b>${esc(t.slice(0,160))}</a></div>`}
+  box.innerHTML=o;box.querySelectorAll('[data-hl]').forEach(x=>x.onclick=()=>{const l=LS.get('hl',{});delete l[x.dataset.hl];LS.set('hl',l);renderMarks()})
+}
+/* ajustes */
+function openSheet(){const sp=$('#sp');sp.innerHTML=`<h3>Ajustes de lectura</h3><label>Tamaño de letra: <span id="fsv">${SET.fs}</span> px</label><input type="range" id="fs" min="14" max="32" value="${SET.fs}"><label>Interlineado</label><input type="range" id="lh" min="1.3" max="2.1" step="0.1" value="${SET.lh}"><label>Tema</label><div class="seg" id="th"><button class="btn" data-v="dark">Oscuro</button><button class="btn" data-v="light">Claro</button><button class="btn" data-v="sepia">Sepia</button></div><label>Tipografía</label><div class="seg" id="fo"><button class="btn" data-v="serif">Con serifa</button><button class="btn" data-v="sans">Sin serifa</button></div><label>Números de versículo</label><div class="seg" id="nu"><button class="btn" data-v="1">Mostrar</button><button class="btn" data-v="0">Ocultar</button></div><label>Uso sin conexión (la Biblia y Comentarios ya están guardados; el resto se guarda al abrirlo, o todo de golpe: ≈ ${Math.round(Object.values(DOCS).reduce((a,d)=>a+d.kb,0)/1024)} MB)</label><button class="btn" id="dl" style="width:100%;min-height:46px;font-size:16px">Descargar todos los libros enlazados</button><div class="mut" id="dlp" style="margin-top:6px"></div>`;
+  const mark=()=>{sp.querySelectorAll('#th .btn').forEach(b=>b.classList.toggle('on',b.dataset.v===SET.theme));sp.querySelectorAll('#fo .btn').forEach(b=>b.classList.toggle('on',b.dataset.v===SET.font));sp.querySelectorAll('#nu .btn').forEach(b=>b.classList.toggle('on',(b.dataset.v==='1')===SET.num))};mark();
+  const save=()=>{LS.set('set',SET);applySet();mark()};
+  sp.querySelector('#fs').oninput=e=>{SET.fs=+e.target.value;$('#fsv').textContent=SET.fs;save()};sp.querySelector('#lh').oninput=e=>{SET.lh=+e.target.value;save()};
+  sp.querySelectorAll('#th .btn').forEach(b=>b.onclick=()=>{SET.theme=b.dataset.v;save()});sp.querySelectorAll('#fo .btn').forEach(b=>b.onclick=()=>{SET.font=b.dataset.v;save()});sp.querySelectorAll('#nu .btn').forEach(b=>b.onclick=()=>{SET.num=b.dataset.v==='1';save()});
+  sp.querySelector('#dl').onclick=downloadAll;
+  $('#sheet').classList.add('on')}
+async function downloadAll(){const p=$('#dlp'),names=Object.keys(DOCS);let tot=0,done=0;names.forEach(d=>tot+=DOCS[d].starts.length);p.textContent='Descargando…';let fail=0;
+  for(const d of names)for(let k=0;k<DOCS[d].starts.length;k++){try{const r=await fetch('docs/'+d+'/'+k+'.html?v='+DOCS[d].v);if(!r.ok)fail++;else await r.arrayBuffer()}catch(e){fail++}done++;if(done%5===0||done===tot)p.textContent='Descargando… '+done+'/'+tot}
+  p.textContent=fail?('Terminado con '+fail+' fallos; vuelve a intentarlo con conexión.'):'Listo: todo disponible sin conexión.'}
+$('#fab').onclick=openSheet;$('#sheet').onclick=e=>{if(e.target.id==='sheet')$('#sheet').classList.remove('on')};
+$('#hh').onclick=()=>{location.hash='#/'};
+/* gestos: deslizar para cambiar de capítulo */
+let tx=0,ty=0;document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY},{passive:true});
+document.addEventListener('touchend',e=>{if(!cur||!location.hash.startsWith('#/r/')||selSet.size)return;const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;if(Math.abs(dx)>90&&Math.abs(dy)<45){const t=dx<0?next(cur.b,cur.c):prev(cur.b,cur.c);if(t)location.hash='#/r/'+t[0]+'/'+t[1]}},{passive:true});
+window.addEventListener('hashchange',render);
+applySet();render();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http')){const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.register('sw.js').catch(()=>{});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!had)return;const d=document.createElement('div');d.style.cssText='position:fixed;left:12px;right:12px;bottom:80px;z-index:70;background:#3a4d75;color:#fff;padding:12px 14px;border-radius:14px;display:flex;gap:10px;align-items:center;font:15px var(--ui)';d.innerHTML='<span style="flex:1">Hay contenido nuevo disponible.</span><button style="background:#fff;color:#1c2330;border:0;border-radius:10px;padding:8px 12px;font:600 15px var(--ui)">Recargar</button>';d.querySelector('button').onclick=()=>location.reload();document.body.appendChild(d)})}
+</script>
+</body>
+</html>
