@@ -27,7 +27,7 @@ Requiere:  pip install python-docx
 import sys, os, re, json, time, html, hashlib, shutil, argparse, subprocess, datetime, calendar, glob, filecmp
 HERE=os.path.dirname(os.path.abspath(__file__))
 for _p in (HERE,os.path.join(HERE,'src')): sys.path.insert(0,_p)
-CODE_VERSION='3'
+CODE_VERSION='4'
 T0=time.time()
 def log(*a): print('[%3ds]'%(time.time()-T0),*a,flush=True)
 def sha_text(*parts):
@@ -104,12 +104,23 @@ def leer_epacta(path):
 
 
 # ============================================================== ePub "El sentir del corazon de Jesus" (Él y yo)
-def _limpia(h):
+_MIN={'a','de','del','la','las','el','los','en','y','que','te','me','por','con','al','o','u','un','una','lo','se','su','sus','mi','tu','nuestro','nuestra'}
+def bonito(t):
+    m=re.match(r'^(\d+\.\s*)(.*)$',t); pre,t=(m.group(1),m.group(2)) if m else ('',t)
+    out=[]
+    for i,w in enumerate(t.split(' ')):
+        core=w.lstrip('¿¡')
+        if i>0 and core.lower() in _MIN: w=w[:len(w)-len(core)]+core.lower()
+        out.append(w)
+    return pre+' '.join(out)
+def _limpia(h,allow=('i',)):
     out=[]
     for tok in re.split(r'(<[^>]+>)',h):
         if tok.startswith('<'):
-            m=re.match(r'<(/?)(i|em)\b',tok,re.I)
-            if m: out.append('<%si>'%m.group(1))
+            m=re.match(r'<(/?)([a-z]+)\b',tok,re.I)
+            if m:
+                tag={'em':'i'}.get(m.group(2).lower(),m.group(2).lower())
+                if tag in allow: out.append('<%s%s>'%(m.group(1),tag))
         else: out.append(html.unescape(tok).replace('&','&amp;').replace('<','&lt;').replace('>','&gt;'))
     return re.sub(r'\s+',' ',''.join(out)).strip()
 
@@ -127,7 +138,7 @@ def leer_epub(path):
         if not re.match(r'(capitulo|sin-titulo)',posixpath.basename(f)): continue
         s=z.read(posixpath.join(base,f).lstrip('./')).decode('utf-8'); body=s[s.find('<body'):]
         h1=re.search(r'<h1[^>]*>(.*?)</h1>',body,re.S)
-        th=re.sub(r'^\d+\.\s*','',txt(h1.group(1))) if h1 else f
+        th=bonito(re.sub(r'^\d+\.\s*','',txt(h1.group(1)))) if h1 else f
         if th not in themes: themes.append(th)
         ti=themes.index(th); cur=None
         for m in re.finditer(r'<p\b([^>]*)>(.*?)</p>',body,re.S):
@@ -153,6 +164,46 @@ def leer_epub(path):
             fr.append('\n'.join(f_)); plains.append(pl)
         P.append([n,fr,pts[n]['th']])
     return {'th':themes,'p':P},{'ocurrencias':sum(len(v['frag']) for v in pts.values()),'huerfanos':huerfanos,'fragmentos_repetidos':rep_}
+
+
+def epub_a_libro(path):
+    """Todo el ePub como libro enlazado de la app: trozos docs/ElYo/k.html (con indice y una estrella en cada punto)."""
+    import zipfile, posixpath
+    z=zipfile.ZipFile(path)
+    opf=re.search(r'full-path="([^"]+)"',z.read('META-INF/container.xml').decode('utf-8')).group(1)
+    o=z.read(opf).decode('utf-8'); base=posixpath.dirname(opf); man={}
+    for it in re.findall(r'<item\b[^>]*>',o):
+        i=re.search(r'\bid="([^"]+)"',it); h=re.search(r'\bhref="([^"]+)"',it)
+        if i and h: man[i.group(1)]=h.group(1)
+    files=[man[i] for i in re.findall(r'<itemref idref="([^"]+)"',o) if i in man]
+    secs=[]; toc=[]; idx=0; npts=0
+    for f in files:
+        b=posixpath.basename(f)
+        if re.match(r'(cover|portadilla|indice)',b): continue
+        s=z.read(posixpath.join(base,f).lstrip('./')).decode('utf-8'); body=s[s.find('<body'):]
+        h1=re.search(r'<h1[^>]*>(.*?)</h1>',body,re.S); title=bonito(txt(h1.group(1))) if h1 else ''
+        cap=bool(re.match(r'(capitulo|sin-titulo)',b)); out=[]; start=idx
+        if title: out.append('<h2 id="o%d" data-o="%d">%s</h2>'%(idx,idx,html.escape(title))); toc.append((title,idx)); idx+=1
+        for m in re.finditer(r'<p\b([^>]*)>(.*?)</p>',body,re.S):
+            c=re.search(r'class="([^"]*)"',m.group(1)); c=c.group(1).split()[0] if c else ''
+            inner=m.group(2).strip(); plain=txt(inner)
+            mm=(re.match(r'^(\d{1,4})\.\s+',plain) or (re.match(r'^(\d{1,4})\s+',plain) if c=='first' else None)) if cap else None
+            if mm:
+                n=int(mm.group(1)); npts+=1
+                inner=re.sub(r'^\s*\d{1,4}\.?\s+','',inner,count=1)
+                out.append('<p class="pn" data-o="%d"><b class="nm">%d.</b><span class="st" data-n="%d" role="button" aria-label="Marcar este punto"></span> %s</p>'%(idx,n,n,_limpia(inner,('i','sup'))))
+            else: out.append('<p data-o="%d">%s</p>'%(idx,_limpia(inner,('i','sup'))))
+            idx+=1
+        secs.append((start,'\n'.join(out)))
+    tocH='<h2>Índice</h2>\n'+'\n'.join('<p class="toc"><a href="#/d/ElYo/%d">%s</a></p>'%(i,html.escape(t_)) for t_,i in toc)
+    chunks=[];starts=[0];cur=''
+    for k,(st,h_) in enumerate(secs):
+        if k==1: cur+=tocH+'\n'
+        if len(cur)>300000: chunks.append(cur); cur=''; starts.append(st)
+        cur+=h_+'\n'
+    chunks.append(cur)
+    meta={'title':'Él y yo','starts':starts,'x':{},'v':hashlib.md5(''.join(chunks).encode()).hexdigest()[:8],'kb':sum(len(c.encode()) for c in chunks)//1024}
+    return chunks,meta,npts
 
 # ============================================================== Misal (.pdb -> datos + libro enlazado)
 MES_N=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
@@ -274,6 +325,23 @@ CSS=r'''
 .cal{flex:1;min-width:0}.calh{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}.calh b{font:600 14px var(--ui);text-transform:capitalize;cursor:pointer}.calh button{background:none;border:0;color:var(--fg);font-size:24px;width:34px;height:34px;border-radius:8px;cursor:pointer}
 .calg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}.calg span{font:600 11px var(--ui);color:var(--mut);padding:2px 0}.cd{display:flex;align-items:center;justify-content:center;aspect-ratio:1;font:13px var(--ui);color:var(--fg);text-decoration:none;border-radius:50%}.cd.no{color:var(--mut);opacity:.45}.cd.td{outline:1px solid var(--link)}.cd.sel{background:var(--link);color:var(--bg);font-weight:700;opacity:1}
 .doc.just p{text-align:justify;-webkit-hyphens:auto;hyphens:auto}
+.star{margin-left:auto;background:none;border:0;font-size:30px;line-height:1;color:var(--mut);padding:0 4px;cursor:pointer;align-self:center}.star::before{content:'☆'}.star.on{color:#f5b301}.star.on::before{content:'★'}
+.st{display:inline-block;margin:0 .3em 0 .1em;font-size:1.3em;line-height:1;color:var(--mut);cursor:pointer;vertical-align:-2px;-webkit-user-select:none;user-select:none}.st::before{content:'☆'}.st.on{color:#f5b301}.st.on::before{content:'★'}
+.doc p.pn{margin-top:1.1em}.doc .nm{color:var(--link)}.doc h2{margin:1.4em 0 .5em}
+.thm{font:700 14px var(--ui);letter-spacing:.06em;text-transform:uppercase;color:var(--link);margin:24px 0 8px}
+/* portada: fila fecha + calendario (sin aspect-ratio, que en Safari/iPad desbordaba) */
+.dtop{display:flex;align-items:stretch;gap:12px;margin:4px 0 6px;max-width:100%}
+.dtop .dhero{flex:0 0 40%;min-width:0;margin:0;text-align:left;display:flex;flex-direction:column;justify-content:center}
+.dtop .dnum{font-size:clamp(88px,25vw,160px);line-height:.95}
+.dtop .dmon{font-size:clamp(22px,5.8vw,36px);margin-top:4px}
+.dtop .dwk{font-size:clamp(14px,3.6vw,20px);margin-top:6px}
+.cal{flex:1 1 0;min-width:0;max-width:100%}
+.calg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.cd{aspect-ratio:auto;display:block;position:relative;min-width:0;font-size:clamp(12px,3.2vw,17px)}
+.cd::before{content:"";display:block;padding-top:100%}
+.cd span{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;align-items:center;justify-content:center}
+.calg span.wd{display:block}
+.calg .cd span{font:inherit;padding:0;color:inherit}
 '''
 JS=r'''
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'],DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'],COLN={bl:'Blanco',ve:'Verde',ro:'Rojo',mo:'Morado',rs:'Rosa'};
@@ -308,8 +376,8 @@ function renderHome(arg){
 let calV=null;
 function drawCal(sel,today){
   const {y,m}=calV,off=(new Date(y,m-1,1).getDay()+6)%7,nd=new Date(y,m,0).getDate();
-  let g='LMXJVSD'.split('').map(x=>`<span>${x}</span>`).join('')+'<i></i>'.repeat(off);
-  for(let d=1;d<=nd;d++){const iso=y+'-'+pad2(m)+'-'+pad2(d);g+=`<a class="cd${iso===sel?' sel':''}${iso===today?' td':''}${EPA[iso]||DAY[iso]?'':' no'}" href="#/dia/${iso}">${d}</a>`}
+  let g='LMXJVSD'.split('').map(x=>`<span class="wd">${x}</span>`).join('')+'<i></i>'.repeat(off);
+  for(let d=1;d<=nd;d++){const iso=y+'-'+pad2(m)+'-'+pad2(d);g+=`<a class="cd${iso===sel?' sel':''}${iso===today?' td':''}${EPA[iso]||DAY[iso]?'':' no'}" href="#/dia/${iso}"><span>${d}</span></a>`}
   $('#cal').innerHTML=`<div class="calh"><button type="button" id="cp" aria-label="Mes anterior">‹</button><b id="cm">${MESES[m-1]} ${y}</b><button type="button" id="cn" aria-label="Mes siguiente">›</button></div><div class="calg">${g}</div>`;
   const go=n=>{const t=new Date(y,m-1+n,1);calV={y:t.getFullYear(),m:t.getMonth()+1,sel:calV.sel};drawCal(sel,today)};
   $('#cp').onclick=()=>go(-1);$('#cn').onclick=()=>go(1);$('#cm').onclick=()=>{const t=new Date(sel.slice(0,4),+sel.slice(5,7)-1,1);calV={y:t.getFullYear(),m:t.getMonth()+1,sel:calV.sel};drawCal(sel,today)}
@@ -319,11 +387,12 @@ const EYN=EY.p.length,eyPerms=new Map();
 function eyRand(seed){let s=seed>>>0;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
 function eyAt(st,p){const c=Math.floor(p/EYN),j=p%EYN,key=st.seed+':'+c;let a=eyPerms.get(key);if(!a){a=Array.from({length:EYN},(_,i)=>i);const r=eyRand((st.seed+Math.imul(c+1,0x9E3779B1))>>>0);for(let i=EYN-1;i>0;i--){const k=Math.floor(r()*(i+1));[a[i],a[k]]=[a[k],a[i]]}eyPerms.set(key,a);if(eyPerms.size>4)eyPerms.delete(eyPerms.keys().next().value)}return a[j]}
 function eyState(){let st=LS.get('ey',null);const today=isoOf(new Date());if(!st||st.n!==EYN)st={seed:(Math.random()*4294967296)>>>0,n:EYN,pos:0,day:'',start:0,shown:0};if(st.day!==today){st.day=today;st.start=st.pos;st.shown=6;st.pos+=6}LS.set('ey',st);return st}
-function eyCard(i){const p=EY.p[i];return `<article class="pt"><div class="ph"><b>${p[0]}</b><span>${p[2].map(t=>esc(EY.th[t])).join(' · ')}</span></div>${p[1].map(f=>`<div class="pf">${f.split('\n').map(x=>`<p>${x}</p>`).join('')}</div>`).join('')}</article>`}
-function eyCards(st,from,n){let o='';for(let p=from;p<from+n;p++)o+=eyCard(eyAt(st,p));return o}
+function eyCard(i,fav){const p=EY.p[i];return `<article class="pt"><div class="ph"><b>${p[0]}</b><span>${p[2].map(t=>esc(EY.th[t])).join(' · ')}</span><button type="button" class="star${fav&&fav.has(p[0])?' on':''}" data-n="${p[0]}" aria-label="Marcar este punto"></button></div>${p[1].map(f=>`<div class="pf">${f.split('\n').map(x=>`<p>${x}</p>`).join('')}</div>`).join('')}</article>`}
+const eyFav=()=>new Set(LS.get('eyfav',[]));
+function eyCards(st,from,n){const fav=eyFav();let o='';for(let p=from;p<from+n;p++)o+=eyCard(eyAt(st,p),fav);return o}
 function eySub(st){const c=Math.floor((st.pos-1)/EYN),x=((st.pos-1)%EYN)+1;return `Hoy ${st.shown} puntos · vuelta ${c+1}: ${x} de ${EYN} puntos vistos`}
 function renderEY(){
-  setHead('Él y yo','#/');const M=$('#main');
+  setHead('Él y yo','#/');const M=$('#main');$('#hstar').style.display='';
   if(!EYN){M.innerHTML='<p class="mut" style="text-align:center">No hay puntos cargados. Falta el ePub «El sentir del corazón de Jesús».</p>';return}
   const st=eyState();
   M.innerHTML=`<h2 class="t" style="margin-bottom:4px">Él y yo</h2><p class="mut" id="eysub" style="margin:0 0 16px">${eySub(st)}</p><div id="eyl">${eyCards(st,st.start,st.shown)}</div><button class="btn" id="eymore" style="width:100%;margin-top:6px">Cargar más puntos…</button>`;
@@ -332,7 +401,7 @@ function renderEY(){
 /* buscador dentro de un libro (todos menos Comentarios) */
 const DIDX=new Map(),BLK='p,h1,h2,h3,h4,h5,h6';let sfDoc='';
 const qTerms=v=>{const t=[],re=/"([^"]+)"|(\S+)/g;let m;const nq=norm(v.replace(/[“”«»]/g,'"'));while((m=re.exec(nq)))t.push((m[1]||m[2]).trim());return t.filter(Boolean)};
-function buildDocIdx(doc,prog){if(DIDX.has(doc))return DIDX.get(doc);const p=(async()=>{const n=DOCS[doc].starts.length,out=[];let head='';for(let k=0;k<n;k++){const r=await fetch('docs/'+doc+'/'+k+'.html?v='+DOCS[doc].v);if(!r.ok)throw new Error('HTTP '+r.status);const d=new DOMParser().parseFromString(await r.text(),'text/html');d.body.querySelectorAll(BLK).forEach((e,i)=>{const t=e.textContent.replace(/\s+/g,' ').trim();if(t.length>1){const c=e.children[0];if(t.length<=90&&(/^H[1-6]$/.test(e.tagName)||(e.children.length===1&&c&&/^(B|STRONG|SPAN)$/.test(c.tagName)&&c.textContent.replace(/\s+/g,' ').trim()===t&&(c.tagName!=='SPAN'||/font-size/.test(c.getAttribute('style')||'')))))head=t;out.push({k,i,t,n:norm(t),h:head})}});if(prog)prog(k+1,n)}return out})();DIDX.set(doc,p);p.catch(()=>DIDX.delete(doc));return p}
+function buildDocIdx(doc,prog){if(DIDX.has(doc))return DIDX.get(doc);const p=(async()=>{const n=DOCS[doc].starts.length,out=[];let head='';for(let k=0;k<n;k++){const r=await fetch('docs/'+doc+'/'+k+'.html?v='+DOCS[doc].v);if(!r.ok)throw new Error('HTTP '+r.status);const d=new DOMParser().parseFromString(await r.text(),'text/html');d.body.querySelectorAll(BLK).forEach((e,i)=>{const t=e.textContent.replace(/\s+/g,' ').trim();if(t.length>1&&!e.classList.contains('toc')){const c=e.children[0];if(t.length<=90&&(/^H[1-6]$/.test(e.tagName)||(e.children.length===1&&c&&/^(B|STRONG|SPAN)$/.test(c.tagName)&&c.textContent.replace(/\s+/g,' ').trim()===t&&(c.tagName!=='SPAN'||/font-size/.test(c.getAttribute('style')||'')))))head=t;out.push({k,i,t,n:norm(t),h:head})}});if(prog)prog(k+1,n)}return out})();DIDX.set(doc,p);p.catch(()=>DIDX.delete(doc));return p}
 function hiText(text,terms){let s=esc(text),ns=norm(s);const sp=[];terms.forEach(x=>{const ex=norm(esc(x));if(!ex)return;let i=0;while((i=ns.indexOf(ex,i))>=0){sp.push([i,i+ex.length]);i+=ex.length}});sp.sort((a,b)=>a[0]-b[0]);let o='',p=0;for(const [a,b] of sp){if(a<p)continue;o+=s.slice(p,a)+'<mark>'+s.slice(a,b)+'</mark>';p=b}return o+s.slice(p)}
 function snipOf(r,terms){let pos=-1;terms.forEach(x=>{const i=r.n.indexOf(x);if(i>=0&&(pos<0||i<pos))pos=i});let a=Math.max(0,pos-90);if(a>0){const sp=r.t.indexOf(' ',a);if(sp>=0&&sp<pos)a=sp+1}const e=a+300;return(a>0?'… ':'')+r.t.slice(a,e)+(e<r.t.length?' …':'')}
 async function renderDocSearch(doc,q0){
@@ -354,6 +423,30 @@ async function renderDocSearch(doc,q0){
 function markIn(root,terms){const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes=[];while(w.nextNode())nodes.push(w.currentNode);for(const nd of nodes){const s=nd.nodeValue,ns=norm(s),sp=[];terms.forEach(x=>{if(!x)return;let i=0;while((i=ns.indexOf(x,i))>=0){sp.push([i,i+x.length]);i+=x.length}});if(!sp.length)continue;sp.sort((a,b)=>a[0]-b[0]);const f=document.createDocumentFragment();let p=0;for(const [a,b] of sp){if(a<p)continue;f.append(s.slice(p,a));const m=document.createElement('mark');m.textContent=s.slice(a,b);f.append(m);p=b}f.append(s.slice(p));nd.replaceWith(f)}}
 function focusPar(i,q){const e=document.querySelectorAll('#dx p,#dx h1,#dx h2,#dx h3,#dx h4,#dx h5,#dx h6')[i];if(!e)return;markIn(e,qTerms(q||''));e.scrollIntoView({block:'start'});window.scrollBy&&window.scrollBy(0,-70);e.classList.add('flash')}
 $('#sfab').onclick=()=>{if(sfDoc)location.hash='#/dsearch/'+sfDoc};
+
+/* puntos marcados: estrella, pantalla, exportación */
+const EYI=new Map(EY.p.map((p,i)=>[p[0],i]));
+document.addEventListener('click',e=>{const s=e.target.closest&&e.target.closest('.st,.star');if(!s)return;e.preventDefault();const n=+s.dataset.n,f=LS.get('eyfav',[]),i=f.indexOf(n);if(i>=0)f.splice(i,1);else f.push(n);LS.set('eyfav',f);document.querySelectorAll('.st[data-n="'+n+'"],.star[data-n="'+n+'"]').forEach(x=>x.classList.toggle('on',i<0))});
+$('#hstar').onclick=()=>{location.hash='#/eyfav'};
+function eyMarkAll(){const fav=eyFav();document.querySelectorAll('#dx .st').forEach(x=>x.classList.toggle('on',fav.has(+x.dataset.n)))}
+function favGroups(){const fav=eyFav(),g=new Map();EY.p.filter(p=>fav.has(p[0])).forEach(p=>{const t=p[2][0];if(!g.has(t))g.set(t,[]);g.get(t).push(p)});return [...g.entries()].sort((a,b)=>a[0]-b[0]).map(([t,l])=>[t,l.sort((a,b)=>a[0]-b[0])])}
+const unent=s=>s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
+const mdI=s=>s.replace(/<i>([\s\S]*?)<\/i>/g,(m,t)=>{const l=t.match(/^\s*/)[0],r=t.match(/\s*$/)[0],c=t.trim();return c?l+'*'+c+'*'+r:l+r}).replace(/<\/?i>/g,'');
+function favMD(G){let o='# Él y yo — puntos marcados\n\n';G.forEach(([t,l])=>{o+='## '+EY.th[t]+'\n\n';l.forEach(p=>{let first=true;p[1].forEach(f=>f.split('\n').forEach(x=>{o+=(first?'**'+p[0]+'.** ':'')+unent(mdI(x))+'\n\n';first=false}))})});return o+'*Fuente: «El sentir del corazón de Jesús» (Ricardo Sada Fernández), del diario de Gabriela Bossis.*\n'}
+function rtfEsc(s){let o='';for(let i=0;i<s.length;i++){const c=s.charCodeAt(i),ch=s[i];if(ch==='\\'||ch==='{'||ch==='}')o+='\\'+ch;else if(c>126)o+='\\u'+(c>32767?c-65536:c)+'?';else o+=ch}return o}
+function rtfI(h){return h.split(/(<\/?i>)/).map(t=>t==='<i>'?'{\\i ':t==='</i>'?'}':rtfEsc(unent(t))).join('')}
+function favRTF(G){let o='{\\rtf1\\ansi\\ansicpg1252\\deff0{\\fonttbl{\\f0\\froman Georgia;}}\\viewkind4\\uc1\\f0\\fs24\n';o+='{\\pard\\b\\fs36 '+rtfEsc('Él y yo — puntos marcados')+'\\par}\\par\n';G.forEach(([t,l])=>{o+='{\\pard\\b\\fs30\\sb360\\sa120 '+rtfEsc(EY.th[t])+'\\par}\n';l.forEach(p=>{let first=true;p[1].forEach(f=>f.split('\n').forEach(x=>{o+='{\\pard\\sa160 '+(first?'{\\b '+p[0]+'.} ':'')+rtfI(x)+'\\par}\n';first=false}))})});return o+'{\\pard\\sb360\\i\\fs20 '+rtfEsc('Fuente: «El sentir del corazón de Jesús» (Ricardo Sada Fernández), del diario de Gabriela Bossis.')+'\\par}\n}'}
+function dlFile(name,mime,text){const b=new Blob([text],{type:mime}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},800)}
+async function copyText(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const x=document.createElement('textarea');x.value=t;x.style.cssText='position:fixed;opacity:0';document.body.append(x);x.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}x.remove();return ok}}
+function renderFav(){
+  setHead('Puntos marcados','#/elyyo','doc');const M=$('#main'),G=favGroups(),n=G.reduce((a,[,l])=>a+l.length,0),fav=eyFav();
+  if(!n){M.innerHTML='<h2 class="t">Puntos marcados</h2><p class="mut">Todavía no has marcado ningún punto. Pulsa la ☆ de un punto de «Él y yo» (o del libro) para guardarlo aquí.</p>';return}
+  M.innerHTML=`<h2 class="t" style="margin-bottom:4px">Puntos marcados</h2><p class="mut" style="margin:0 0 12px">${n} punto${n>1?'s':''}, ordenados por temas</p><div class="row"><button class="btn" id="xmd">⬇ .md</button><button class="btn" id="xrtf">⬇ .rtf</button><button class="btn" id="xcp">📋 Copiar</button></div>`+G.map(([t,l])=>`<h3 class="thm">${esc(EY.th[t])}</h3>`+l.map(p=>eyCard(EYI.get(p[0]),fav)).join('')).join('');
+  const hoy=isoOf(new Date());
+  $('#xmd').onclick=()=>dlFile('El-y-yo_puntos-marcados_'+hoy+'.md','text/markdown;charset=utf-8',favMD(favGroups()));
+  $('#xrtf').onclick=()=>dlFile('El-y-yo_puntos-marcados_'+hoy+'.rtf','application/rtf',favRTF(favGroups()));
+  $('#xcp').onclick=async()=>{const b=$('#xcp'),ok=await copyText(favMD(favGroups()));b.textContent=ok?'✓ Copiado':'No se pudo copiar';setTimeout(()=>b.textContent='📋 Copiar',1800)};
+}
 '''
 NEW_HOME=r"""  if(k===''||k==='dia'){
     renderHome(k==='dia'?h[1]:null);
@@ -363,18 +456,19 @@ NEW_HOME=r"""  if(k===''||k==='dia'){
     M.innerHTML='<h2 class="hero">Sagrada Escritura</h2><p class="sub">Elige una sección</p>'+(last?`<a class="cont" href="#/r/${last.b}/${last.c}"><small>Continuar leyendo</small><b>${esc(BK[last.b].name)} · ${esc(BK[last.b].ch[last.c].t)}</b></a>`:'')+'<div class="grid">'+SEC.map((s,i)=>`<a class="btn" href="#/s/${i}">${esc(s.name)}</a>`).join('')+'</div><div class="row"><a class="btn" href="#/search">🔍 Buscar</a><a class="btn" href="#/marks">★ Marcadores</a></div><div class="row"><a class="btn" href="#/docs">📚 Comentarios y libros enlazados</a></div>';
 """
 
-def parchear_index(src,EPA,DAY,meta,EY):
+def parchear_index(src,EPA,DAY,meta,EY,meta_ey=None):
     def rep(old,new,count=1):
         nonlocal src
         if src.count(old)!=count: sys.exit('No encuentro en index.html el trozo que hay que modificar (%d veces, esperaba %d):\n   %s\n¿Ha cambiado la plantilla de la app? Hay que adaptar parchear_index().'%(src.count(old),count,old[:90]))
         src=src.replace(old,new)
     rep('<title>Sagrada Escritura</title>','<title>Diario</title>')
-    rep('<h1 id="ht">Sagrada Escritura</h1>','<h1 id="ht">Diario</h1>')
+    rep('<h1 id="ht">Sagrada Escritura</h1>','<h1 id="ht">Diario</h1><button id="hstar" aria-label="Puntos marcados" style="display:none">★</button>')
     m=re.search(r'const CAT=(\{.*?\});\nconst \$=',src,re.S); raw=m.group(1); C=json.loads(raw)
     C['docs']['Misal']=meta
+    if meta_ey: C['docs']['ElYo']=meta_ey
     j=lambda o:json.dumps(o,ensure_ascii=False,separators=(',',':'))
     src=src.replace('const CAT='+raw+';\n','const CAT='+j(C)+';\nconst DAY='+j(DAY)+';\nconst EPA='+j(EPA)+';\nconst EY='+j(EY)+';\n',1)
-    rep("const TITLES={Comentarios:'Comentarios',","const TITLES={Misal:'Misal diario',Comentarios:'Comentarios',")
+    rep("const TITLES={Comentarios:'Comentarios',","const TITLES={Misal:'Misal diario',ElYo:'Él y yo',Comentarios:'Comentarios',")
     rep('</style>',CSS+'</style>')
     a=src.index("  if(k===''){"); b=src.index("  }else if(k==='s'){")
     src=src[:a]+NEW_HOME+src[b:]
@@ -387,11 +481,11 @@ def parchear_index(src,EPA,DAY,meta,EY):
     rep('function renderDocs(){',JS+'function renderDocs(){')
 
     rep('<button id="fab" aria-label="Ajustes">⚙</button>','<button id="fab" aria-label="Ajustes">⚙</button>\n<button id="sfab" aria-label="Buscar en este libro" style="display:none">🔍</button>')
-    rep("$('#fab').style.display='';bar(null);window.scrollTo(0,0);","$('#fab').style.display='';$('#sfab').style.display='none';bar(null);window.scrollTo(0,0);")
+    rep("$('#fab').style.display='';bar(null);window.scrollTo(0,0);","$('#fab').style.display='';$('#sfab').style.display='none';$('#hstar').style.display='none';bar(null);window.scrollTo(0,0);")
     rep("  else if(k==='d'||k==='dp'){await renderDoc(h[1],k==='dp'?{page:+h[2]||0}:{off:h[2]===undefined?0:+h[2]})}",
-        "  else if(k==='elyyo'){renderEY()}\n  else if(k==='dsearch'){await renderDocSearch(h[1],decodeURIComponent(h[2]||''))}\n  else if(k==='dq'){await renderDoc(h[1],{k:+h[2],i:+h[3],q:decodeURIComponent(h[4]||'')})}\n  else if(k==='d'||k==='dp'){await renderDoc(h[1],k==='dp'?{page:+h[2]||0}:{off:h[2]===undefined?0:+h[2]})}")
+        "  else if(k==='elyyo'){renderEY()}\n  else if(k==='eyfav'){renderFav()}\n  else if(k==='dsearch'){await renderDocSearch(h[1],decodeURIComponent(h[2]||''))}\n  else if(k==='dq'){await renderDoc(h[1],{k:+h[2],i:+h[3],q:decodeURIComponent(h[4]||'')})}\n  else if(k==='d'||k==='dp'){await renderDoc(h[1],k==='dp'?{page:+h[2]||0}:{off:h[2]===undefined?0:+h[2]})}")
     rep("const k=o.page!==undefined?Math.min(Math.max(o.page,0),DOCS[doc].starts.length-1):chunkOf(doc,o.off);","const k=o.k!==undefined?Math.min(Math.max(o.k,0),DOCS[doc].starts.length-1):o.page!==undefined?Math.min(Math.max(o.page,0),DOCS[doc].starts.length-1):chunkOf(doc,o.off);")
-    rep("M.innerHTML='<div class=\"doc\" id=\"dx\">'+t+'</div>';","M.innerHTML='<div class=\"doc'+(doc==='Misal'||doc==='Comentarios'?'':' just')+'\" id=\"dx\">'+t+'</div>';sfDoc=doc;$('#sfab').style.display=doc==='Comentarios'?'none':'';if(o.i!==undefined)focusPar(o.i,o.q);")
+    rep("M.innerHTML='<div class=\"doc\" id=\"dx\">'+t+'</div>';","M.innerHTML='<div class=\"doc'+(doc==='Misal'||doc==='Comentarios'?'':' just')+'\" id=\"dx\">'+t+'</div>';sfDoc=doc;$('#sfab').style.display=doc==='Comentarios'?'none':'';$('#hstar').style.display=doc==='ElYo'?'':'none';if(doc==='ElYo')eyMarkAll();if(o.i!==undefined)focusPar(o.i,o.q);")
     return src
 
 def parchear_sw(txt_,sufijo):
@@ -445,13 +539,18 @@ def main():
     M,cdir=preparar_misal(pm,bib,WORK,a.forzar)
     ep=sorted(glob.glob(os.path.join(PDBM,'*.epub'))+glob.glob(os.path.join(PDB,'*.epub')))
     if ep:
-        EY,est=leer_epub(ep[0]); log('Él y yo: %s -> %d puntos distintos (%d apariciones en el libro, %d fragmentos repetidos descartados)'%(os.path.basename(ep[0]),len(EY['p']),est['ocurrencias'],est['fragmentos_repetidos']))
+        EY,est=leer_epub(ep[0]); chunks_ey,meta_ey,npts=epub_a_libro(ep[0])
+        edir=os.path.join(WORK,'diario','elyo'); os.makedirs(edir,exist_ok=True)
+        for f_ in os.listdir(edir): os.remove(os.path.join(edir,f_))
+        for k_,c_ in enumerate(chunks_ey): open(os.path.join(edir,'%d.html'%k_),'w',encoding='utf-8').write(c_)
+        log('Libro Él y yo: %d trozos, %d KB, %d puntos con estrella'%(len(chunks_ey),meta_ey['kb'],npts))
+        log('Él y yo: %s -> %d puntos distintos (%d apariciones en el libro, %d fragmentos repetidos descartados)'%(os.path.basename(ep[0]),len(EY['p']),est['ocurrencias'],est['fragmentos_repetidos']))
         if est['huerfanos']: log('   AVISO: %d párrafos del libro no se han podido asignar a ningún punto'%est['huerfanos'])
     else:
-        EY={'th':[],'p':[]}; log('AVISO: no hay ningún .epub de "El sentir del corazón de Jesús" en %s: la pantalla Él y yo saldrá vacía.'%PDBM)
+        EY={'th':[],'p':[]}; meta_ey=None; chunks_ey=[]; log('AVISO: no hay ningún .epub de "El sentir del corazón de Jesús" en %s: la pantalla Él y yo saldrá vacía.'%PDBM)
     meta={'title':'Misal diario','starts':M['starts'],'x':{},'v':M['v'],'kb':M['kb']}
     # ------------------------------------------------ 3. index.html con la portada
-    idx=parchear_index(base_index,EPA,M['day'],meta,EY)
+    idx=parchear_index(base_index,EPA,M['day'],meta,EY,meta_ey)
     os.makedirs(WORK+'/diario',exist_ok=True)
     open(WORK+'/diario/index.html','w',encoding='utf-8').write(idx)
     suf=sha_text(idx,M['v'])[:8]
@@ -459,7 +558,7 @@ def main():
     for root,_,files in os.walk(BASE):
         for fn in files:
             r=os.path.relpath(os.path.join(root,fn),BASE).replace(os.sep,'/')
-            if r in('index.html','sw.js') or r.startswith('docs/Misal/'): continue
+            if r in('index.html','sw.js') or r.startswith('docs/Misal/') or r.startswith('docs/ElYo/'): continue
             items.append((r,os.path.join(root,fn)))
     items.append(('index.html',WORK+'/diario/index.html'))
     if os.path.exists(BASE+'/sw.js'):
@@ -467,6 +566,7 @@ def main():
         open(WORK+'/diario/sw.js','w',encoding='utf-8').write(sw); items.append(('sw.js',WORK+'/diario/sw.js'))
         if not ok: log('AVISO: no he encontrado el número de versión en sw.js; si el móvil no se actualiza, cámbialo a mano.')
     for k in range(len(M['starts'])): items.append(('docs/Misal/%d.html'%k,os.path.join(cdir,'%d.html'%k)))
+    for k in range(len(chunks_ey)): items.append(('docs/ElYo/%d.html'%k,os.path.join(WORK,'diario','elyo','%d.html'%k)))
     # ------------------------------------------------ 4. comprobaciones
     ids=set()
     for k in range(len(M['starts'])): ids.update(int(x) for x in re.findall(r'id="o(\d+)"',open(os.path.join(cdir,'%d.html'%k),encoding='utf-8').read()))
@@ -507,7 +607,7 @@ def main():
     informe=['Actualizacion del Diario %s'%datetime.datetime.now().strftime('%Y-%m-%d %H:%M'),'']+informe+[
         'Epacta en la app: %d días (%s a %s)'%(len(EPA),ek[0],ek[-1]),
         'Misal %s: %d días (%s a %s), %d trozos, %d KB'%(M['year'],len(dk),dk[0],dk[-1],len(M['starts']),M['kb']),
-        'Él y yo: %d puntos'%len(EY['p']),
+        'Él y yo: %d puntos distintos; libro completo en %d trozos'%(len(EY['p']),len(chunks_ey)),
         'Hoy (%s): epacta %s, Misal %s'%(hoy,'sí' if hoy in EPA else 'NO','sí' if hoy in M['day'] else 'NO'),
         'Lecturas con referencia bíblica sin enlace: %d'%sin_enlace,
         'Archivos: %d copiados, %d sin cambios, %d borrados'%(cop,igu,bor)]
