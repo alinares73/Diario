@@ -27,7 +27,7 @@ Requiere:  pip install python-docx
 import sys, os, re, json, time, html, hashlib, shutil, argparse, subprocess, datetime, calendar, glob, filecmp
 HERE=os.path.dirname(os.path.abspath(__file__))
 for _p in (HERE,os.path.join(HERE,'src')): sys.path.insert(0,_p)
-CODE_VERSION='2'
+CODE_VERSION='3'
 T0=time.time()
 def log(*a): print('[%3ds]'%(time.time()-T0),*a,flush=True)
 def sha_text(*parts):
@@ -270,6 +270,10 @@ CSS=r'''
 .ph{display:flex;gap:10px;align-items:baseline;margin-bottom:6px}.ph b{font:700 18px var(--ui);color:var(--link)}.ph span{font:13px var(--ui);color:var(--mut)}
 .pf{font:var(--fs)/var(--lh) var(--ff)}.pf+.pf{border-top:1px dashed var(--bd);margin-top:10px;padding-top:6px}.pf p{margin:.4em 0}
 .doc mark{background:var(--hl);color:inherit;border-radius:3px}
+.dtop{display:flex;gap:14px;align-items:flex-start;margin:4px 0 4px}.dtop .dhero{text-align:left;flex:0 0 38%;margin:0}.dtop .dnum{font-size:84px}.dtop .dmon{font-size:25px}.dtop .dwk{font-size:15px}
+.cal{flex:1;min-width:0}.calh{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}.calh b{font:600 14px var(--ui);text-transform:capitalize;cursor:pointer}.calh button{background:none;border:0;color:var(--fg);font-size:24px;width:34px;height:34px;border-radius:8px;cursor:pointer}
+.calg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}.calg span{font:600 11px var(--ui);color:var(--mut);padding:2px 0}.cd{display:flex;align-items:center;justify-content:center;aspect-ratio:1;font:13px var(--ui);color:var(--fg);text-decoration:none;border-radius:50%}.cd.no{color:var(--mut);opacity:.45}.cd.td{outline:1px solid var(--link)}.cd.sel{background:var(--link);color:var(--bg);font-weight:700;opacity:1}
+.doc.just p{text-align:justify;-webkit-hyphens:auto;hyphens:auto}
 '''
 JS=r'''
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'],DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'],COLN={bl:'Blanco',ve:'Verde',ro:'Rojo',mo:'Morado',rs:'Rosa'};
@@ -279,7 +283,8 @@ function renderHome(arg){
   const today=isoOf(new Date()),iso=/^\d{4}-\d\d-\d\d$/.test(arg||'')?arg:today;
   const [y,m,d]=iso.split('-').map(Number),dt=new Date(y,m-1,d),E=EPA[iso],D=DAY[iso];
   setHead('Diario',iso===today?'':'#/');
-  let h=`<div class="dhero"><div class="dnum">${d}</div><div class="dmon">${MESES[m-1]}</div><div class="dwk">${DIAS[dt.getDay()]} · ${y}</div></div>`;
+  if(!calV||calV.sel!==iso)calV={y,m,sel:iso};
+  let h=`<div class="dtop"><div class="dhero"><div class="dnum">${d}</div><div class="dmon">${MESES[m-1]}</div><div class="dwk">${DIAS[dt.getDay()]} · ${y}</div></div><div class="cal" id="cal"></div></div>`;
   h+=`<div class="dnav"><a class="btn" href="#/dia/${addDays(iso,-1)}" aria-label="Día anterior">‹</a><a class="btn" href="#/">Hoy</a><a class="btn" href="#/dia/${addDays(iso,1)}" aria-label="Día siguiente">›</a></div>`;
   const kv=(l,t)=>t?`<div class="kv"><small>${l}</small>${esc(t)}</div>`:'';
   const alm=D&&D.n?`<div class="kv"><small>Notas de Almudi</small>${D.n}</div>`:'';
@@ -298,7 +303,16 @@ function renderHome(arg){
   }
   if(!E&&!D)h+='<p class="mut" style="text-align:center">No hay datos litúrgicos para esta fecha.</p>';
   h+='<div class="row one"><a class="btn" href="#/biblia">📖 Sagrada Escritura</a></div><div class="row two"><a class="btn" href="#/docs">📚 Libros</a><a class="btn" href="#/elyyo">🕊️ Él y yo</a></div>';
-  $('#main').innerHTML=h;
+  $('#main').innerHTML=h;drawCal(iso,today);
+}
+let calV=null;
+function drawCal(sel,today){
+  const {y,m}=calV,off=(new Date(y,m-1,1).getDay()+6)%7,nd=new Date(y,m,0).getDate();
+  let g='LMXJVSD'.split('').map(x=>`<span>${x}</span>`).join('')+'<i></i>'.repeat(off);
+  for(let d=1;d<=nd;d++){const iso=y+'-'+pad2(m)+'-'+pad2(d);g+=`<a class="cd${iso===sel?' sel':''}${iso===today?' td':''}${EPA[iso]||DAY[iso]?'':' no'}" href="#/dia/${iso}">${d}</a>`}
+  $('#cal').innerHTML=`<div class="calh"><button type="button" id="cp" aria-label="Mes anterior">‹</button><b id="cm">${MESES[m-1]} ${y}</b><button type="button" id="cn" aria-label="Mes siguiente">›</button></div><div class="calg">${g}</div>`;
+  const go=n=>{const t=new Date(y,m-1+n,1);calV={y:t.getFullYear(),m:t.getMonth()+1,sel:calV.sel};drawCal(sel,today)};
+  $('#cp').onclick=()=>go(-1);$('#cn').onclick=()=>go(1);$('#cm').onclick=()=>{const t=new Date(sel.slice(0,4),+sel.slice(5,7)-1,1);calV={y:t.getFullYear(),m:t.getMonth()+1,sel:calV.sel};drawCal(sel,today)}
 }
 /* Él y yo: 6 puntos al azar, sin repetir hasta agotar todos */
 const EYN=EY.p.length,eyPerms=new Map();
@@ -377,7 +391,7 @@ def parchear_index(src,EPA,DAY,meta,EY):
     rep("  else if(k==='d'||k==='dp'){await renderDoc(h[1],k==='dp'?{page:+h[2]||0}:{off:h[2]===undefined?0:+h[2]})}",
         "  else if(k==='elyyo'){renderEY()}\n  else if(k==='dsearch'){await renderDocSearch(h[1],decodeURIComponent(h[2]||''))}\n  else if(k==='dq'){await renderDoc(h[1],{k:+h[2],i:+h[3],q:decodeURIComponent(h[4]||'')})}\n  else if(k==='d'||k==='dp'){await renderDoc(h[1],k==='dp'?{page:+h[2]||0}:{off:h[2]===undefined?0:+h[2]})}")
     rep("const k=o.page!==undefined?Math.min(Math.max(o.page,0),DOCS[doc].starts.length-1):chunkOf(doc,o.off);","const k=o.k!==undefined?Math.min(Math.max(o.k,0),DOCS[doc].starts.length-1):o.page!==undefined?Math.min(Math.max(o.page,0),DOCS[doc].starts.length-1):chunkOf(doc,o.off);")
-    rep("M.innerHTML='<div class=\"doc\" id=\"dx\">'+t+'</div>';","M.innerHTML='<div class=\"doc\" id=\"dx\">'+t+'</div>';sfDoc=doc;$('#sfab').style.display=doc==='Comentarios'?'none':'';if(o.i!==undefined)focusPar(o.i,o.q);")
+    rep("M.innerHTML='<div class=\"doc\" id=\"dx\">'+t+'</div>';","M.innerHTML='<div class=\"doc'+(doc==='Misal'||doc==='Comentarios'?'':' just')+'\" id=\"dx\">'+t+'</div>';sfDoc=doc;$('#sfab').style.display=doc==='Comentarios'?'none':'';if(o.i!==undefined)focusPar(o.i,o.q);")
     return src
 
 def parchear_sw(txt_,sufijo):
